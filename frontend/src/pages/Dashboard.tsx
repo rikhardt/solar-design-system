@@ -1,148 +1,193 @@
-import React, { useEffect, useState } from 'react';
-import {
-  Grid,
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CircularProgress,
-  Paper
+import React, { useState } from 'react';
+import { 
+  Box, 
+  Container, 
+  Grid, 
+  Paper, 
+  Typography, 
+  Slider, 
+  List,
+  ListItem,
+  ListItemText,
+  IconButton
 } from '@mui/material';
-import {
-  SolarPower,
-  Cloud,
-  Battery90,
-  TrendingUp
-} from '@mui/icons-material';
-import { SolarProject, WeatherData } from '../types';
+import DeleteIcon from '@mui/icons-material/Delete';
+import DataEntryForm from '../components/projects/DataEntryForm';
+import ThreeJSViewer from '../components/visualization/ThreeJSViewer';
+import ComponentCatalog from '../components/catalog/ComponentCatalog';
+import { Location, SystemConstraints, Component } from '../types/project';
+import EconomicAnalysis from '../components/analysis/EconomicAnalysis';
+import SimulationResults from '../components/simulation/SimulationResults';
+import { styled } from '@mui/material/styles';
+
+const calculateSystemSize = (components: Component[]): number => {
+  const panels = components.filter(c => c.type === 'panel');
+  // Asumiendo paneles de 360W en promedio
+  return (panels.length * 0.360); // Tamaño del sistema en kW
+};
+
+const Item = styled(Paper)(({ theme }) => ({
+  backgroundColor: theme.palette.mode === 'dark' ? '#1A2027' : '#fff',
+  ...theme.typography.body2,
+  padding: theme.spacing(2),
+  color: theme.palette.text.secondary,
+}));
 
 const Dashboard: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [projects, setProjects] = useState<SolarProject[]>([]);
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
+  const [selectedComponents, setSelectedComponents] = useState<Component[]>([]);
+  const [systemConstraints, setSystemConstraints] = useState<SystemConstraints>({
+    availableArea: 100,
+    roofType: 'plano',
+    orientation: 0,
+    tilt: 30,
+    obstacles: []
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // TODO: Implementar llamadas a la API real
-        // Simulación de datos para la demo
-        setTimeout(() => {
-          setProjects([
-            {
-              id: 1,
-              name: 'Proyecto Solar Residencial',
-              description: 'Sistema fotovoltaico para vivienda',
-              location: { latitude: -33.4569, longitude: -70.6483 },
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-              components: []
-            }
-          ]);
-          
-          setWeatherData({
-            location: 'Santiago, Chile',
-            timestamp: new Date().toISOString(),
-            temperature: 25,
-            irradiance: 850,
-            humidity: 45,
-            windSpeed: 10
-          });
-          
-          setLoading(false);
-        }, 1000);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setLoading(false);
-      }
-    };
+  const handleAreaChange = (event: Event, newValue: number | number[]) => {
+    setSystemConstraints(prev => ({
+      ...prev,
+      availableArea: newValue as number
+    }));
+  };
 
-    fetchData();
-  }, []);
+  const handleTiltChange = (event: Event, newValue: number | number[]) => {
+    setSystemConstraints(prev => ({
+      ...prev,
+      tilt: newValue as number
+    }));
+  };
 
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  const DashboardCard = ({ title, value, icon, color }: any) => (
-    <Card sx={{ height: '100%' }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          {icon}
-          <Typography variant="h6" component="div" sx={{ ml: 1 }}>
-            {title}
-          </Typography>
-        </Box>
-        <Typography variant="h4" component="div" color={color}>
-          {value}
-        </Typography>
-      </CardContent>
-    </Card>
-  );
+  const handleLocationChange = (newLocation: Location) => {
+    setLocation(newLocation);
+    console.log('Nueva ubicación seleccionada:', newLocation);
+  };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Dashboard
-      </Typography>
+    <Container maxWidth="xl">
+      <Box sx={{ flexGrow: 1, mt: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Diseño de Sistema Solar Fotovoltaico
+        </Typography>
+        
+        <Grid container spacing={3}>
+          {/* Panel de Entrada de Datos */}
+          <Grid item xs={12} md={4}>
+            <Item>
+              <Typography variant="h6" gutterBottom>
+                Datos de Entrada
+              </Typography>
+              <DataEntryForm onLocationChange={handleLocationChange} />
+            </Item>
+          </Grid>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Proyectos Activos"
-            value={projects.length}
-            icon={<SolarPower color="primary" />}
-            color="primary"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Temperatura"
-            value={`${weatherData?.temperature}°C`}
-            icon={<Cloud color="info" />}
-            color="info"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Irradiancia"
-            value={`${weatherData?.irradiance} W/m²`}
-            icon={<TrendingUp color="warning" />}
-            color="warning"
-          />
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <DashboardCard
-            title="Eficiencia"
-            value="95%"
-            icon={<Battery90 color="success" />}
-            color="success"
-          />
-        </Grid>
-
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Proyectos Recientes
-            </Typography>
-            {projects.map((project) => (
-              <Box key={project.id} sx={{ mb: 2 }}>
-                <Typography variant="subtitle1">{project.name}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {project.description}
-                </Typography>
+          {/* Visualización 3D / Mapa */}
+          <Grid item xs={12} md={8}>
+            <Item sx={{ height: '500px' }}>
+              <Typography variant="h6" gutterBottom>
+                Visualización del Sistema
+              </Typography>
+              <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ mb: 2 }}>
+                  <Typography gutterBottom>Área Disponible (m²)</Typography>
+                  <Slider
+                    value={systemConstraints.availableArea}
+                    onChange={handleAreaChange}
+                    min={10}
+                    max={500}
+                    valueLabelDisplay="auto"
+                  />
+                  <Typography gutterBottom>Inclinación (grados)</Typography>
+                  <Slider
+                    value={systemConstraints.tilt}
+                    onChange={handleTiltChange}
+                    min={0}
+                    max={45}
+                    valueLabelDisplay="auto"
+                  />
+                </Box>
+                <Box sx={{ flexGrow: 1 }}>
+                  <ThreeJSViewer systemConstraints={systemConstraints} />
+                </Box>
               </Box>
-            ))}
-          </Paper>
+            </Item>
+          </Grid>
+
+          {/* Catálogo de Componentes */}
+          <Grid item xs={12} md={6}>
+            <Item>
+              <Typography variant="h6" gutterBottom>
+                Catálogo de Componentes
+              </Typography>
+              <ComponentCatalog 
+                onComponentSelect={(component) => {
+                  setSelectedComponents(prev => [...prev, component]);
+                }}
+              />
+              {selectedComponents.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Componentes Seleccionados
+                  </Typography>
+                  <List>
+                    {selectedComponents.map((component, index) => (
+                      <ListItem
+                        key={`${component.id}-${index}`}
+                        secondaryAction={
+                          <IconButton 
+                            edge="end" 
+                            aria-label="delete"
+                            onClick={() => {
+                              setSelectedComponents(prev => 
+                                prev.filter((_, i) => i !== index)
+                              );
+                            }}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        }
+                      >
+                        <ListItemText
+                          primary={`${component.manufacturer} ${component.model}`}
+                          secondary={`Tipo: ${component.type}`}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              )}
+            </Item>
+          </Grid>
+
+          {/* Análisis Económico */}
+          <Grid item xs={12} md={6}>
+            <Item>
+              <Typography variant="h6" gutterBottom>
+                Análisis Económico
+              </Typography>
+              <EconomicAnalysis 
+                selectedComponents={selectedComponents}
+                systemSize={calculateSystemSize(selectedComponents)}
+              />
+            </Item>
+          </Grid>
+
+          {/* Resultados de Simulación */}
+          <Grid item xs={12}>
+            <Item>
+              <Typography variant="h6" gutterBottom>
+                Resultados de Simulación
+              </Typography>
+              <SimulationResults 
+                selectedComponents={selectedComponents}
+                systemConstraints={systemConstraints}
+                location={location}
+              />
+            </Item>
+          </Grid>
         </Grid>
-      </Grid>
-    </Box>
+      </Box>
+    </Container>
   );
 };
 
